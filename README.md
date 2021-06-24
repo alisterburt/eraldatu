@@ -1,2 +1,2 @@
 # eraldatu
-it means transform in Basque
+it means '*transform*' in Basque
