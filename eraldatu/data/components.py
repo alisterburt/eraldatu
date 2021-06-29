@@ -10,37 +10,18 @@ class Pose(BaseModel):
 
     Attributes
     ----------
-    positions : (n, 3) np.ndarray
-        Positions in 3D
+    positions : (n, 3, 1) np.ndarray
+        Positions in 3D represented as column vectors
     orientations : (n, 3, 3) np.ndarray
         Orientations in 3D described as rotation matrices which premultiply
         column vectors (v -> v' == Rv = v')
     """
-    positions: Array[float, (-1, 3)]
+    positions: Array[float, (-1, 3, 1)]
     orientations: Array[float, (-1, 3, 3)]
 
     @property
     def count(self):
         return self.positions.shape[0]
-
-    @property
-    def positions_homogeneous(self):
-        """Positions expressed in homogeneous coordinates"""
-        target_shape = (self.count, 4, 1)
-        result = np.ones(shape=target_shape, dtype=float)
-        result[:, :-1, :] = self.positions
-        return result
-
-    @property
-    def matrix(self):
-        """Pose expressed as an (n, 4, 4) set of matrices.
-        """
-        result = einops.repeat(
-            np.eye(4, dtype=float), 'i j -> new_axis i j', new_axis=self.count
-        )
-        result[:, :3, :3] = self.orientations
-        result[:, :3, 3] = self.positions
-        return result
 
 
 class Transform(BaseModel):
@@ -48,29 +29,18 @@ class Transform(BaseModel):
 
     Attributes
     ----------
-    shifts : (n, 3) np.ndarray
+    shifts : (n, 3, 1) np.ndarray
         Shifts in 3D
     rotations : (n, 3, 3) np.ndarray
         Rotations in 3D described as rotation matrices which premultiply
         column vectors ( v -> v' | Rv == v' )
     """
-    shifts: Array[float, (-1, 3)]
+    shifts: Array[float, (-1, 3, 1)]
     rotations: Array[float, (-1, 3, 3)]
 
     @property
     def count(self):
         return self.shifts.shape[0]
-
-    @property
-    def matrix(self):
-        """Transformations expressed as an (m, 4, 4) set of matrices
-        """
-        result = einops.repeat(
-            np.eye(4, dtype=float), 'i j -> new_axis i j', new_axis=self.count
-        )
-        result[:, :3, :3] = self.rotations
-        result[:, :3, 3] = self.shifts
-        return result
 
     def apply(self, pose: Pose) -> tuple[Array, Array]:
         """Apply transformations on a set of poses
@@ -87,20 +57,26 @@ class Transform(BaseModel):
             (m, n, 3, 3) orientations where n is the number of poses and m is
             the number of transforms
         """
-        # rearrange transformation matrix for desired broadcasting
-        # pose matrices (n, 4, 4)
-        # transformation matrices (m, 4, 4)
-        # transformed matrices (m, n, 4, 4)
-        transformation_matrix = einops.rearrange(
-            self.matrix, 'm i j -> m 1 i j'
+        # transformation rotations     (m, 3, 3)
+        # broadcastable             (m, 1, 3, 3)
+        # pose orientations            (n, 3, 3)
+        # final rotations           (m, n, 3, 3)
+        broadcastable_rotations = einops.rearrange(
+            self.rotations, 'm i j -> m 1 i j'
         )
+        final_rotations = broadcastable_rotations @ pose.orientations
 
-        # apply transformation
-        transformed_matrix = transformation_matrix @ pose.matrix
+        # shifts                       (m, 3, 1)
+        # broadcastable             (m, 1, 3, 1)
+        # pose orientations            (n, 3, 3)
+        # oriented                  (m, n, 3, 1)
+        # pose positions               (n, 3, 1)
+        # final positions           (m, n, 3, 1)
+        broadcastable_shifts = einops.rearrange(
+            self.shifts, 'm i j -> m 1 i j'
+        )
+        oriented_shifts = pose.orientations @ broadcastable_shifts
+        final_positions = pose.positions + oriented_shifts
 
-        # decompose transformed matrix into final positions and orientations
-        transformed_positions = transformed_matrix[:, :, :3, 3]
-        transformed_orientations = transformed_matrix[:, :, :3, :3]
-
-        return transformed_positions, transformed_orientations
+        return final_positions.squeeze(), final_rotations.squeeze()
 
