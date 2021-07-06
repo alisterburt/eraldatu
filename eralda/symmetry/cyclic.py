@@ -7,9 +7,9 @@ def derive_rotation_matrices(order: int) -> np.ndarray:
 
     Axis of rotation is the Z axis.
     Matrices are defined
-    Rz = [[cos(t), -sin(t), 0],
-          [sin(t),  cos(t), 0],
-          [     0,       0, 1]]
+    Rz = [[cos(t), -sin(t),    0],
+          [sin(t),  cos(t),    0],
+          [     0,       0,    1]]
 
 
     Parameters
@@ -20,7 +20,7 @@ def derive_rotation_matrices(order: int) -> np.ndarray:
     Returns
     -------
     rotation_matrices: (order, 3, 3) np.ndarray
-        matrices defining rotations around z
+        matrices defining rotations around the Z axis
     """
     theta = np.linspace(0, 2*np.pi, num=order, endpoint=False)
     cos_theta = np.cos(theta)
