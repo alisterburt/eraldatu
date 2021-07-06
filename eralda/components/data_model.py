@@ -66,7 +66,7 @@ class Transform(BaseModel):
         )
         final_rotations = broadcastable_rotations @ pose.orientations
 
-        # shifts                       (m, 3, 1)
+        # transformation shifts        (m, 3, 1)
         # broadcastable             (m, 1, 3, 1)
         # pose orientations            (n, 3, 3)
         # oriented                  (m, n, 3, 1)
