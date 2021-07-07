@@ -2,7 +2,7 @@ import einops
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from ..components import Pose, Transform
+from ..data_model import Pose, Transform
 
 
 def test_pose_instantiation(positions, identity_matrices):
