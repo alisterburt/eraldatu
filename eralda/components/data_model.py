@@ -1,12 +1,13 @@
 import einops
-import numpy as np
 from pydantic import BaseModel
 
 from ..utils.typing import Array
 
 
 class Pose(BaseModel):
-    """Pose object modelling a set of poses in 3D
+    """Pose object modelling a set of poses in 3D.
+
+    Poses are defined relative to the origin (0, 0, 0) of the tomogram.
 
     Attributes
     ----------
@@ -26,6 +27,8 @@ class Pose(BaseModel):
 
 class Transform(BaseModel):
     """Transform object modelling a set of transforms in 3D
+
+    Transforms are defined relative to the center of a reference.
 
     Attributes
     ----------
@@ -79,4 +82,6 @@ class Transform(BaseModel):
         final_positions = pose.positions + oriented_shifts
 
         return final_positions.squeeze(), final_rotations.squeeze()
+
+
 

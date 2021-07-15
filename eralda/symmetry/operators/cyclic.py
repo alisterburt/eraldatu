@@ -1,6 +1,10 @@
-import numpy as np
-import einops
+from functools import cached_property
+from dataclasses import dataclass
 
+import einops
+import numpy as np
+
+from .operator import SymmetryOperator
 
 def derive_rotation_matrices(order: int) -> np.ndarray:
     """Calculate a set of rotation matrices for a cyclic symmetry.
@@ -22,7 +26,7 @@ def derive_rotation_matrices(order: int) -> np.ndarray:
     rotation_matrices: (order, 3, 3) np.ndarray
         matrices defining rotations around the Z axis
     """
-    theta = np.linspace(0, 2*np.pi, num=order, endpoint=False)
+    theta = np.linspace(0, 2 * np.pi, num=order, endpoint=False)
     cos_theta = np.cos(theta)
     sin_theta = np.sin(theta)
 
@@ -36,3 +40,18 @@ def derive_rotation_matrices(order: int) -> np.ndarray:
     rotation_matrices[:, 1, 0] = sin_theta
     rotation_matrices[:, 1, 1] = cos_theta
     return rotation_matrices
+
+
+@dataclass
+class Cyclic(SymmetryOperator):
+    order: int
+
+    def __post_init__(self):
+        self.order = int(self.order)
+
+        if self.order < 1:
+            raise ValueError('`order` must be 1 order greater')
+
+    @cached_property
+    def matrices(self):
+        return derive_rotation_matrices(self.order)

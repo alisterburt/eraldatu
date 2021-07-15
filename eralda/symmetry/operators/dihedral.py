@@ -1,6 +1,11 @@
-import numpy as np
+from dataclasses import dataclass
+from functools import cached_property
+
 import einops
+import numpy as np
+
 from .cyclic import derive_rotation_matrices as derive_cyclic_rotation_matrices
+from .operator import SymmetryOperator
 
 
 def derive_rotation_matrices(order: int) -> np.ndarray:
@@ -44,3 +49,18 @@ def derive_rotation_matrices(order: int) -> np.ndarray:
         'd n i j -> (d n) i j'
     )
     return rotation_matrices
+
+
+@dataclass
+class Dihedral(SymmetryOperator):
+    order: int
+
+    def __post_init__(self):
+        self.order = int(self.order)
+
+        if self.order < 1:
+            raise ValueError('`order` must be 1 order greater')
+
+    @cached_property
+    def matrices(self):
+        return derive_rotation_matrices(self.order)
